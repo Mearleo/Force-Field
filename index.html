@@ -43,7 +43,7 @@
         window.addEventListener("mouseup", () => mouse_down = false);
 
         const create_scale = 0.1;
-        const size = 150;
+        const size = 50;
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                     x_pos.push((x - size/2) * create_scale);
@@ -53,10 +53,10 @@
             }
         }
 
-        const CANVAS_VIEW = 50;
+        const CANVAS_VIEW = 10;
         const shorter_side = Math.min(canvas.width, canvas.height);
         const view_ratio = shorter_side/(CANVAS_VIEW*2);
-        ctx.fillStyle = "#FFF";
+            ctx.fillStyle = "#AFA";
         function draw_point(x, y) {
             ctx.fillRect(x*view_ratio + canvas.width/2, -y*view_ratio + canvas.height/2, 1, 1);
         }
@@ -69,7 +69,6 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillText(new Date().getTime() - last_time, canvas.width - 100, 10);
             last_time = new Date().getTime();
-            ctx.fillStyle = "#fff";
 
             for (let i = 0; i < x_pos.length; i++) {
                 x_pos[i] += x_vel[i] * delta_time;
@@ -80,12 +79,11 @@
                     let delta_x = mouse_x - x_pos[i];
                     let delta_y = mouse_y - y_pos[i];
                     const mouse_distance = Math.hypot(delta_x, delta_y);
-                    const force = 50 / (mouse_distance / 10 + 1);
-                    const force_over_dist = force/mouse_distance;
-                    delta_x *= force_over_dist;
-                    delta_y *= force_over_dist;
-                    x_vel[i] += delta_x * delta_time;
-                    y_vel[i] += delta_y * delta_time;
+                    const linear_attraction = 50 / ((mouse_distance / 10) + 1);
+                    delta_x *= linear_attraction / mouse_distance;
+                    delta_y *= linear_attraction / mouse_distance;
+                    x_vel[i] = (x_vel[i] + delta_x * delta_time) * 0.995;
+                    y_vel[i] = (y_vel[i] + delta_y * delta_time) * 0.995;
                 }
 
                 draw_point(x_pos[i], y_pos[i]);
