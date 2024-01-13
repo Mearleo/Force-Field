@@ -42,8 +42,8 @@
         window.addEventListener("mousedown", () => mouse_down = true);
         window.addEventListener("mouseup", () => mouse_down = false);
 
-        const create_scale = 0.1;
-        const size = 50;
+        const size = 150;
+        const create_scale = 1/size;
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                     x_pos.push((x - size/2) * create_scale);
@@ -61,13 +61,17 @@
             ctx.fillRect(x*view_ratio + canvas.width/2, -y*view_ratio + canvas.height/2, 1, 1);
         }
 
-        const delta_time = 1/60;
-        let last_time = new Date().getTime();
         
+        const delta_time = 0.001;
+        let last_time = new Date().getTime();
+        let delta_value = 0;
+        
+        const RESITANCE = 1;
         (function loop() {
             window.requestAnimationFrame(loop);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillText(new Date().getTime() - last_time, canvas.width - 100, 10);
+            delta_value += ((new Date().getTime() - last_time) - delta_value) * 0.08;
+            ctx.fillText(Math.floor(delta_value), canvas.width - 100, 10);
             last_time = new Date().getTime();
 
             for (let i = 0; i < x_pos.length; i++) {
@@ -79,11 +83,12 @@
                     let delta_x = mouse_x - x_pos[i];
                     let delta_y = mouse_y - y_pos[i];
                     const mouse_distance = Math.hypot(delta_x, delta_y);
-                    const linear_attraction = 50 / ((mouse_distance / 10) + 1);
-                    delta_x *= linear_attraction / mouse_distance;
-                    delta_y *= linear_attraction / mouse_distance;
-                    x_vel[i] = (x_vel[i] + delta_x * delta_time) * 0.995;
-                    y_vel[i] = (y_vel[i] + delta_y * delta_time) * 0.995;
+                    const linear_attraction = 500 / (mouse_distance**2 + 0);
+                    const attraction_over_dist = linear_attraction / mouse_distance;
+                    delta_x *= attraction_over_dist;
+                    delta_y *= attraction_over_dist;
+                    x_vel[i] = (x_vel[i] + delta_x * delta_time) * RESITANCE;
+                    y_vel[i] = (y_vel[i] + delta_y * delta_time) * RESITANCE;
                 }
 
                 draw_point(x_pos[i], y_pos[i]);
