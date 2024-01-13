@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Field</title>
+</head>
+<body>
+    <canvas></canvas>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        canvas {
+            background-color: rgb(49, 49, 49);
+        }
+    </style>
+    <script>
+        console.clear();
+        const canvas = document.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let x_pos = [];
+        let y_pos = [];
+        let x_vel = [];
+        let y_vel = [];
+
+        let mouse_x = 0;
+        let mouse_y = 0;
+        let mouse_down = false;
+
+        window.addEventListener("mousemove", e => {
+            mouse_x = (e.pageX - canvas.width/2) / view_ratio;
+            mouse_y = -(e.pageY - canvas.height/2) / view_ratio;
+        });
+
+        window.addEventListener("mousedown", () => mouse_down = true);
+        window.addEventListener("mouseup", () => mouse_down = false);
+
+        const create_scale = 0.1;
+        const size = 150;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                    x_pos.push((x - size/2) * create_scale);
+                    y_pos.push((y - size/2) * create_scale);
+                    x_vel.push(0);
+                    y_vel.push(0);
+            }
+        }
+
+        const CANVAS_VIEW = 50;
+        const shorter_side = Math.min(canvas.width, canvas.height);
+        const view_ratio = shorter_side/(CANVAS_VIEW*2);
+        ctx.fillStyle = "#FFF";
+        function draw_point(x, y) {
+            ctx.fillRect(x*view_ratio + canvas.width/2, -y*view_ratio + canvas.height/2, 1, 1);
+        }
+
+        const delta_time = 1/60;
+        let last_time = new Date().getTime();
+        
+        (function loop() {
+            window.requestAnimationFrame(loop);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillText(new Date().getTime() - last_time, canvas.width - 100, 10);
+            last_time = new Date().getTime();
+            ctx.fillStyle = "#fff";
+
+            for (let i = 0; i < x_pos.length; i++) {
+                x_pos[i] += x_vel[i] * delta_time;
+                y_pos[i] += y_vel[i] * delta_time;
+
+
+                if(mouse_down) {
+                    let delta_x = mouse_x - x_pos[i];
+                    let delta_y = mouse_y - y_pos[i];
+                    const mouse_distance = Math.hypot(delta_x, delta_y);
+                    const force = 50 / (mouse_distance / 10 + 1);
+                    const force_over_dist = force/mouse_distance;
+                    delta_x *= force_over_dist;
+                    delta_y *= force_over_dist;
+                    x_vel[i] += delta_x * delta_time;
+                    y_vel[i] += delta_y * delta_time;
+                }
+
+                draw_point(x_pos[i], y_pos[i]);
+            }
+            
+        })();
+    </script>
+</body>
+</html>
