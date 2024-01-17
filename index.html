@@ -8,10 +8,9 @@
 <body>
     <canvas></canvas>
     <div>
-        <button>toggle trace (t)</button>
-        <button onclick="ctx.clearRect(0, 0, canvas.width, canvas.height);">clear (c)</button>
-        <button onclick="
-        ">save (s)</button>
+        <button onclick="toggle_trace()">toggle trace (t)</button>
+        <button onclick="clear_canvas()">clear (c)</button>
+        <button onclick="download()">save (s)</button>
     </div>
     <style>
         body {
@@ -86,36 +85,36 @@
         let mouse_y = 0;
         let mouse_down = false;
 
-        window.addEventListener("contextmenu", e => {
+        canvas.addEventListener("contextmenu", e => {
             e.preventDefault();  
         });
 
-        window.addEventListener("mousemove", e => {
+        canvas.addEventListener("mousemove", e => {
             mouse_x = (e.pageX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_y = -(e.pageY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
         });
         
-        window.addEventListener("touchmove", e => {
+        canvas.addEventListener("touchmove", e => {
             mouse_x = (e.touches[0].clientX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_y = -(e.touches[0].clientY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
         });
 
-        window.addEventListener("mousedown", e => {
+        canvas.addEventListener("mousedown", e => {
             mouse_x = (e.pageX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_y = -(e.pageY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_down = true;
         });
-        window.addEventListener("mouseup", e => {
+        canvas.addEventListener("mouseup", e => {
             mouse_down = false;
             e.preventDefault();
         });
-        window.addEventListener("touchstart", e => {
+        canvas.addEventListener("touchstart", e => {
             mouse_x = (e.touches[0].clientX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_y = -(e.touches[0].clientY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
             mouse_down = true;
         });
 
-        window.addEventListener("touchend", e => {
+        canvas.addEventListener("touchend", e => {
             mouse_down = false;
             e.preventDefault();
         });
@@ -156,13 +155,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.fillStyle = "#222";
+            ctx.globalAlpha = 1;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.restore();
         }
-        window.addEventListener("keydown", e => {
-            if (e.key == "s") download();
-            if (e.key == "c") clear_canvas();
-            if (e.key == "t") {
+        var toggle_trace = function() {
                 if (trace) {
                     trace = false;
                     ctx.globalAlpha = 1;
@@ -171,7 +168,11 @@
                     trace = true;
                     ctx.globalAlpha = .01;
                 }
-            }
+        }
+        window.addEventListener("keydown", e => {
+            if (e.key == "s") download();
+            if (e.key == "c") clear_canvas();
+            if (e.key == "t") toggle_trace();
         });
 
 
