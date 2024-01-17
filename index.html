@@ -7,6 +7,12 @@
 </head>
 <body>
     <canvas></canvas>
+    <div>
+        <button>toggle trace (t)</button>
+        <button onclick="ctx.clearRect(0, 0, canvas.width, canvas.height);">clear (c)</button>
+        <button onclick="
+        ">save (s)</button>
+    </div>
     <style>
         body {
             overflow: hidden;
@@ -15,7 +21,22 @@
         }
 
         canvas {
-            background-color: rgb(49, 49, 49);
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas, body, html, * {
+            touch-action: none;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+        }
+
+        div {
+            position: absolute;
+            top: 10px;
+            left: 10px;
         }
     </style>
     <script>
@@ -24,6 +45,37 @@
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        ctx.textAlign = "right";
+        ctx.textBaseline = 'top';
+
+        const observer = new ResizeObserver(resizeTheCanvasToDisplaySize)
+        observer.observe(canvas);
+
+        function resizeTheCanvasToDisplaySize(entries) {
+            const entry = entries[0];
+            let width;
+            let height;
+            if (entry.devicePixelContentBoxSize) {
+                width = entry.devicePixelContentBoxSize[0].inlineSize;
+                height = entry.devicePixelContentBoxSize[0].blockSize;
+            } else if (entry.contentBoxSize) {
+                // fallback for Safari that will not always be correct
+                width = Math.round(entry.contentBoxSize[0].inlineSize * devicePixelRatio);
+                height = Math.round(entry.contentBoxSize[0].blockSize * devicePixelRatio);
+            }
+            canvas.width = width;
+            canvas.height = height;
+            ctx.fillStyle = "#AFA";
+            shorter_side = Math.min(canvas.width, canvas.height);
+            view_ratio = shorter_side/(CANVAS_VIEW*2);
+            shorter_offset = Math.min(canvas.offsetWidth, canvas.offsetHeight);
+            view_ratio_offset = shorter_offset * CANVAS_VIEW * 2;
+            if (trace) {
+                ctx.globalAlpha = .01;
+            } else {
+                ctx.globalAlpha = 1;
+            }
+        }
 
         let x_pos = [];
         let y_pos = [];
@@ -34,15 +86,41 @@
         let mouse_y = 0;
         let mouse_down = false;
 
-        window.addEventListener("mousemove", e => {
-            mouse_x = (e.pageX - canvas.width/2) / view_ratio;
-            mouse_y = -(e.pageY - canvas.height/2) / view_ratio;
+        window.addEventListener("contextmenu", e => {
+            e.preventDefault();  
         });
 
-        window.addEventListener("mousedown", () => mouse_down = true);
-        window.addEventListener("mouseup", () => mouse_down = false);
+        window.addEventListener("mousemove", e => {
+            mouse_x = (e.pageX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_y = -(e.pageY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
+        });
+        
+        window.addEventListener("touchmove", e => {
+            mouse_x = (e.touches[0].clientX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_y = -(e.touches[0].clientY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
+        });
 
-        const size = 150;
+        window.addEventListener("mousedown", e => {
+            mouse_x = (e.pageX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_y = -(e.pageY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_down = true;
+        });
+        window.addEventListener("mouseup", e => {
+            mouse_down = false;
+            e.preventDefault();
+        });
+        window.addEventListener("touchstart", e => {
+            mouse_x = (e.touches[0].clientX - canvas.offsetWidth/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_y = -(e.touches[0].clientY - canvas.offsetHeight/2) / shorter_offset * CANVAS_VIEW * 2;
+            mouse_down = true;
+        });
+
+        window.addEventListener("touchend", e => {
+            mouse_down = false;
+            e.preventDefault();
+        });
+
+        const size = 100;
         const create_scale = 1/size;
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
@@ -54,24 +132,55 @@
         }
 
         const CANVAS_VIEW = 10;
-        const shorter_side = Math.min(canvas.width, canvas.height);
-        const view_ratio = shorter_side/(CANVAS_VIEW*2);
-            ctx.fillStyle = "#AFA";
+        let shorter_side = Math.min(canvas.width, canvas.height);
+        let view_ratio = shorter_side/(CANVAS_VIEW*2);
+        let shorter_offset = Math.min(canvas.offsetWidth, canvas.offsetHeight);
         function draw_point(x, y) {
             ctx.fillRect(x*view_ratio + canvas.width/2, -y*view_ratio + canvas.height/2, 1, 1);
         }
 
         
-        const delta_time = 0.001;
+        const delta_time = 0.021;
         let last_time = new Date().getTime();
         let delta_value = 0;
         
-        const RESITANCE = 1;
+        
+        let trace = false;
+        var download = function() {
+            var link = document.createElement('a');
+            link.download = 'particle_image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        var clear_canvas = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.fillStyle = "#222";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+        window.addEventListener("keydown", e => {
+            if (e.key == "s") download();
+            if (e.key == "c") clear_canvas();
+            if (e.key == "t") {
+                if (trace) {
+                    trace = false;
+                    ctx.globalAlpha = 1;
+                } else {
+                    clear_canvas();
+                    trace = true;
+                    ctx.globalAlpha = .01;
+                }
+            }
+        });
+
+
+        const RESITANCE = 0.995;
         (function loop() {
             window.requestAnimationFrame(loop);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(!trace) clear_canvas();
             delta_value += ((new Date().getTime() - last_time) - delta_value) * 0.08;
-            ctx.fillText(Math.floor(delta_value), canvas.width - 100, 10);
+            if(!trace) ctx.fillText(Math.floor(delta_value), canvas.width, 0);
             last_time = new Date().getTime();
 
             for (let i = 0; i < x_pos.length; i++) {
@@ -83,7 +192,8 @@
                     let delta_x = mouse_x - x_pos[i];
                     let delta_y = mouse_y - y_pos[i];
                     const mouse_distance = Math.hypot(delta_x, delta_y);
-                    const linear_attraction = 500 / (mouse_distance**2 + 0);
+                    //const linear_attraction = 500 / (mouse_distance**2 + 0);
+                    const linear_attraction = 500 / (mouse_distance + 10);
                     const attraction_over_dist = linear_attraction / mouse_distance;
                     delta_x *= attraction_over_dist;
                     delta_y *= attraction_over_dist;
